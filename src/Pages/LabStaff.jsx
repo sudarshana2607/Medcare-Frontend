@@ -51,7 +51,6 @@ function LabStaff() {
   /* ── Create Test state ── */
   const blankCreate = { patientId: "", patientName: "", testName: "", priority: "Normal", emergency: false };
   const [createForm,   setCreateForm]   = useState(blankCreate);
-  //const [patients,     setPatients]     = useState([]);
   const [createMsg,    setCreateMsg]    = useState("");
   const [creating,     setCreating]     = useState(false);
 
@@ -109,20 +108,11 @@ function LabStaff() {
     setDashLoading(false);
   };
 
- /* const fetchPatients = async () => {
-    try {
-      const res = await axios.get(`${API}/user/all`);
-      const arr = res.data?.users || res.data?.data || (Array.isArray(res.data) ? res.data : []);
-      setPatients(arr.filter((u) => u.role === "patient"));
-    } catch (err) { console.error(err); }
-  };*/
-
   const fetchReportTests = async () => {
     setReportLoading(true);
     try {
       const res = await axios.get(`${API}/labtest/tests`);
       const arr = Array.isArray(res.data) ? res.data : [];
-      // Show all non-completed tests for report upload
       setReportTests(arr.filter((t) => t.status !== "Completed"));
     } catch (err) { console.error(err); }
     setReportLoading(false);
@@ -139,8 +129,7 @@ function LabStaff() {
 
   useEffect(() => {
     if (activePage === "dashboard") fetchDashboard();
-    if (activePage === "create")   { fetchPatients(); }
-    if (activePage === "reports")  fetchReportTests();
+    if (activePage === "reports")   fetchReportTests();
     if (activePage === "equipment") fetchEquipment();
   }, [activePage]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -198,13 +187,11 @@ function LabStaff() {
     setReportMsg("");
     try {
       if (reportForm.testId) {
-        // Update existing test record
         await axios.put(`${API}/labtest/report/${reportForm.testId}`, {
           report:  reportForm.result,
           remarks: reportForm.remarks,
         });
       } else {
-        // Create new test + upload report together
         await axios.post(`${API}/labtest/tests`, {
           patientName: reportForm.patientName,
           testName:    reportForm.testName || "General Test",
@@ -274,7 +261,6 @@ function LabStaff() {
                 <p>Overview of all laboratory tests</p>
               </div>
 
-              {/* Stats cards */}
               <div className="mc-cards" style={{ marginBottom: "1.5rem" }}>
                 <div className="mc-card teal">
                   <div className="mc-card-icon">🧪</div>
@@ -500,7 +486,6 @@ function LabStaff() {
                 </div>
               </div>
 
-              {/* Pending tests table */}
               <div className="mc-panel">
                 <div className="mc-panel-header"><h2>Tests Awaiting Report ({reportTests.length})</h2></div>
                 <div className="mc-table-wrap">
@@ -543,7 +528,6 @@ function LabStaff() {
                 <p>Manage and track all lab equipment</p>
               </div>
 
-              {/* Create equipment form */}
               <div className="mc-panel" style={{ marginBottom: "1.5rem" }}>
                 <div className="mc-panel-header"><h2>➕ Add Equipment</h2></div>
                 <div className="mc-panel-body">
@@ -596,7 +580,6 @@ function LabStaff() {
                 </div>
               </div>
 
-              {/* Equipment table — shows backend + locally added */}
               <div className="mc-panel">
                 <div className="mc-panel-header"><h2>Equipment List ({equipment.length} items)</h2></div>
                 <div className="mc-table-wrap">

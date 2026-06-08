@@ -7,7 +7,6 @@ const API = "https://medcare-hms-backend.onrender.com/api";
 
 /* ═══════════════════════════════════════════════════════════════════
    HELPER — extracts userId no matter how localStorage saved the object
-   Covers: { _id }, { id }, { userId }, { user: { _id } }, etc.
 ═══════════════════════════════════════════════════════════════════ */
 function extractUserId(patient) {
   if (!patient) return null;
@@ -46,8 +45,6 @@ function SidebarBtn({ page, label, icon, activePage, setActivePage }) {
 
 /* ═══════════════════════════════════════════════════════════════════
    EDIT PROFILE
-   GET /api/patient/profile/:userId
-   PUT /api/patient/profile/:userId
 ═══════════════════════════════════════════════════════════════════ */
 function EditProfile({ patient, onProfileUpdate }) {
   const userId = extractUserId(patient);
@@ -284,17 +281,12 @@ function EditProfile({ patient, onProfileUpdate }) {
 
 /* ═══════════════════════════════════════════════════════════════════
    APPOINTMENT PAGE
-   GET  /api/user/doctors
-   POST /api/patient/appointments/book
-   GET  /api/patient/appointments/:userId
 ═══════════════════════════════════════════════════════════════════ */
 function AppointmentPage({ patient }) {
-  // extractUserId handles _id / id / userId / user._id — all shapes
   const userId = extractUserId(patient);
 
   const [tab, setTab] = useState("book");
 
-  // ── Book state ──
   const [doctors,    setDoctors]    = useState([]);
   const [loadDoc,    setLoadDoc]    = useState(true);
   const [docError,   setDocError]   = useState(null);
@@ -305,12 +297,10 @@ function AppointmentPage({ patient }) {
   const [success,    setSuccess]    = useState(false);
   const [submitErr,  setSubmitErr]  = useState(null);
 
-  // ── Previous state ──
   const [appointments, setAppointments] = useState([]);
   const [loadAppt,     setLoadAppt]     = useState(false);
   const [apptError,    setApptError]    = useState(null);
 
-  // Fetch doctors on mount
   useEffect(() => {
     axios
       .get(`${API}/user/doctors`)
@@ -322,7 +312,6 @@ function AppointmentPage({ patient }) {
       .finally(() => setLoadDoc(false));
   }, []);
 
-  // Fetch appointments when Previous tab opened
   useEffect(() => {
     if (tab !== "previous" || !userId) return;
     setLoadAppt(true);
@@ -353,7 +342,6 @@ function AppointmentPage({ patient }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // ✅ FIX: guard against missing userId before even trying to submit
     if (!userId) {
       setSubmitErr("Session expired. Please log in again.");
       return;
@@ -368,7 +356,7 @@ function AppointmentPage({ patient }) {
 
     try {
       const { data } = await axios.post(`${API}/patient/appointments/book`, {
-        patientId:  userId,          // ✅ comes from patient._id
+        patientId:  userId,
         doctorId:   form.doctorId,
         doctorName: form.doctorName,
         department: form.department,
@@ -384,7 +372,6 @@ function AppointmentPage({ patient }) {
         setSubmitErr(data.message || "Booking failed.");
       }
     } catch (err) {
-      // ✅ FIX: surface backend error message if available
       const msg = err?.response?.data?.message || "Server error. Please try again.";
       setSubmitErr(msg);
     } finally {
@@ -401,7 +388,6 @@ function AppointmentPage({ patient }) {
         <p>Book a new appointment or view previous ones</p>
       </div>
 
-      {/* ── Session missing — shown prominently so user can act on it ── */}
       {!userId && (
         <div className="mc-alert error" style={{ marginBottom: 16 }}>
           <span>⚠️</span>
@@ -416,6 +402,7 @@ function AppointmentPage({ patient }) {
         <button className={`mc-tab-btn ${tab === "book"     ? "active" : ""}`} onClick={() => setTab("book")}>📅 Book Appointment</button>
         <button className={`mc-tab-btn ${tab === "previous" ? "active" : ""}`} onClick={() => setTab("previous")}>📋 Previous Appointments</button>
       </div>
+
       {tab === "book" && (
         <>
           {success && (
@@ -436,7 +423,6 @@ function AppointmentPage({ patient }) {
           )}
 
           <div className="mc-ba-layout">
-            {/* Doctor picker */}
             <div className="mc-panel mc-ba-doctor-panel">
               <div className="mc-panel-header"><h2>👨‍⚕️ Select Doctor</h2></div>
               <div className="mc-panel-body">
@@ -478,7 +464,6 @@ function AppointmentPage({ patient }) {
               </div>
             </div>
 
-            {/* Booking form */}
             <div className="mc-panel mc-ba-form-panel">
               <div className="mc-panel-header"><h2>📅 Appointment Details</h2></div>
               <div className="mc-panel-body">
@@ -533,7 +518,6 @@ function AppointmentPage({ patient }) {
         </>
       )}
 
-      {/* ── PREVIOUS TAB ── */}
       {tab === "previous" && (
         <div className="mc-panel">
           <div className="mc-panel-header"><h2>My Appointments</h2></div>
@@ -675,43 +659,42 @@ function Dashboard({ patient }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   PATIENT REPORTS — shows doctor reports from /api/report/patient
+   PATIENT REPORTS
 ═══════════════════════════════════════════════════════════════════ */
 function PatientReports({ patient }) {
   const [reports,  setReports]  = useState([]);
   const [labTests, setLabTests] = useState([]);
   const [loading,  setLoading]  = useState(true);
-  //const name  = patient?.firstname ? `${patient.firstname} ${patient.lastname || ""}`.trim() : "";
-  //const phone = patient?.phone || "";
 
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        // Doctor reports — fetch all, then filter loosely by firstname or phone
+        const firstname = (patient?.firstname || "").toLowerCase();
+        const phone     = patient?.phone || "";
+
         const rRes = await axios.get(`${API}/report/all`).catch(() => null);
         if (rRes) {
           const arr = rRes.data?.reports || rRes.data?.data || (Array.isArray(rRes.data) ? rRes.data : []);
-          if (arr.length === 0) { setReports([]); }
-          else {
-            const firstname = (patient?.firstname || "").toLowerCase();
+          if (arr.length === 0) {
+            setReports([]);
+          } else {
             const matched = firstname
               ? arr.filter(r =>
                   (r.patient || "").toLowerCase().includes(firstname) ||
                   (phone && (r.phone || "").includes(phone))
                 )
               : arr;
-            // Show matched results; if none matched show all (patient is logged in so it's safe)
             setReports(matched.length > 0 ? matched : arr);
           }
         }
-        // Lab tests — fetch all, filter loosely
+
         const lRes = await axios.get(`${API}/labtest/tests`).catch(() => null);
         if (lRes) {
           const arr = Array.isArray(lRes.data) ? lRes.data : [];
-          if (arr.length === 0) { setLabTests([]); }
-          else {
-            const firstname = (patient?.firstname || "").toLowerCase();
+          if (arr.length === 0) {
+            setLabTests([]);
+          } else {
             const matched = firstname
               ? arr.filter(t =>
                   (t.patientName || "").toLowerCase().includes(firstname) ||
@@ -725,7 +708,7 @@ function PatientReports({ patient }) {
       setLoading(false);
     };
     fetchAll();
-  }, [patient]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [patient]);
 
   if (loading) return <div className="mc-panel"><div className="mc-panel-body"><p>Loading reports…</p></div></div>;
 
@@ -736,7 +719,6 @@ function PatientReports({ patient }) {
         <p>Doctor reports and lab test results for you</p>
       </div>
 
-      {/* Doctor Reports */}
       <div className="mc-panel" style={{ marginBottom: "1.5rem" }}>
         <div className="mc-panel-header"><h2>📋 Doctor Reports ({reports.length})</h2></div>
         {reports.length === 0 ? (
@@ -764,7 +746,6 @@ function PatientReports({ patient }) {
         )}
       </div>
 
-      {/* Lab Test Reports */}
       <div className="mc-panel">
         <div className="mc-panel-header"><h2>🧪 Lab Test Reports ({labTests.length})</h2></div>
         {labTests.length === 0 ? (
@@ -797,24 +778,23 @@ function PatientReports({ patient }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   PATIENT PRESCRIPTIONS — shows prescriptions from /api/prescription/all
+   PATIENT PRESCRIPTIONS
 ═══════════════════════════════════════════════════════════════════ */
 function PatientPrescriptions({ patient }) {
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading,       setLoading]       = useState(true);
-  //const name  = patient?.firstname ? `${patient.firstname} ${patient.lastname || ""}`.trim() : "";
-  //const phone = patient?.phone || "";
 
   useEffect(() => {
+    const firstname = (patient?.firstname || "").toLowerCase();
+    const phone     = patient?.phone || "";
+
     axios.get(`${API}/prescription/all`)
       .then(res => {
         const arr = res.data?.prescriptions || res.data?.data || (Array.isArray(res.data) ? res.data : []);
-        const firstname = (patient?.firstname || "").toLowerCase();
         const matched = firstname
           ? arr.filter(p =>
               (p.patient || "").toLowerCase().includes(firstname) ||
-             // (phone && (p.phone || "").includes(phone))
-             (patient?.phone && (r.phone || "").includes(patient.phone))
+              (phone && (p.phone || "").includes(phone))
             )
           : arr;
         setPrescriptions(matched.length > 0 ? matched : arr);
@@ -862,19 +842,18 @@ function PatientPrescriptions({ patient }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   PATIENT BILLING — shows pharmacy bills from /api/pharmacy/bills
+   PATIENT BILLING
 ═══════════════════════════════════════════════════════════════════ */
 function PatientBilling({ patient }) {
   const [bills,   setBills]   = useState([]);
   const [loading, setLoading] = useState(true);
- // const name  = patient?.firstname ? `${patient.firstname} ${patient.lastname || ""}`.trim() : "";
-  //const phone = patient?.phone || "";
 
   useEffect(() => {
+    const firstname = (patient?.firstname || "").toLowerCase();
+
     axios.get(`${API}/pharmacy/bills`)
       .then(res => {
         const arr = Array.isArray(res.data) ? res.data : (res.data?.data || []);
-        const firstname = (patient?.firstname || "").toLowerCase();
         const matched = firstname
           ? arr.filter(b =>
               (b.patientName || b.patient || "").toLowerCase().includes(firstname)
@@ -1012,8 +991,6 @@ function Patient() {
                   : "Patient"}!
               </h2>
               <p>View appointments, reports, prescriptions and billing details from MedCare Hospital.</p>
-              <div className="mc-welcome-meta">
-              </div>
             </div>
           )}
 
@@ -1057,17 +1034,9 @@ function Patient() {
             </>
           )}
 
-          {activePage === "reports" && (
-            <PatientReports patient={patient} />
-          )}
-
-          {activePage === "prescription" && (
-            <PatientPrescriptions patient={patient} />
-          )}
-
-          {activePage === "billing" && (
-            <PatientBilling patient={patient} />
-          )}
+          {activePage === "reports"      && <PatientReports      patient={patient} />}
+          {activePage === "prescription" && <PatientPrescriptions patient={patient} />}
+          {activePage === "billing"      && <PatientBilling       patient={patient} />}
 
         </main>
       </div>
