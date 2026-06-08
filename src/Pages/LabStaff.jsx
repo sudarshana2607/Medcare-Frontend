@@ -51,7 +51,7 @@ function LabStaff() {
   /* ── Create Test state ── */
   const blankCreate = { patientId: "", patientName: "", testName: "", priority: "Normal", emergency: false };
   const [createForm,   setCreateForm]   = useState(blankCreate);
-  const [patients,     setPatients]     = useState([]);
+  //const [patients,     setPatients]     = useState([]);
   const [createMsg,    setCreateMsg]    = useState("");
   const [creating,     setCreating]     = useState(false);
 
@@ -109,13 +109,13 @@ function LabStaff() {
     setDashLoading(false);
   };
 
-  const fetchPatients = async () => {
+ /* const fetchPatients = async () => {
     try {
       const res = await axios.get(`${API}/user/all`);
       const arr = res.data?.users || res.data?.data || (Array.isArray(res.data) ? res.data : []);
       setPatients(arr.filter((u) => u.role === "patient"));
     } catch (err) { console.error(err); }
-  };
+  };*/
 
   const fetchReportTests = async () => {
     setReportLoading(true);

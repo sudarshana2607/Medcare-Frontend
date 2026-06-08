@@ -681,8 +681,8 @@ function PatientReports({ patient }) {
   const [reports,  setReports]  = useState([]);
   const [labTests, setLabTests] = useState([]);
   const [loading,  setLoading]  = useState(true);
-  const name  = patient?.firstname ? `${patient.firstname} ${patient.lastname || ""}`.trim() : "";
-  const phone = patient?.phone || "";
+  //const name  = patient?.firstname ? `${patient.firstname} ${patient.lastname || ""}`.trim() : "";
+  //const phone = patient?.phone || "";
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -802,8 +802,8 @@ function PatientReports({ patient }) {
 function PatientPrescriptions({ patient }) {
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading,       setLoading]       = useState(true);
-  const name  = patient?.firstname ? `${patient.firstname} ${patient.lastname || ""}`.trim() : "";
-  const phone = patient?.phone || "";
+  //const name  = patient?.firstname ? `${patient.firstname} ${patient.lastname || ""}`.trim() : "";
+  //const phone = patient?.phone || "";
 
   useEffect(() => {
     axios.get(`${API}/prescription/all`)
@@ -813,7 +813,8 @@ function PatientPrescriptions({ patient }) {
         const matched = firstname
           ? arr.filter(p =>
               (p.patient || "").toLowerCase().includes(firstname) ||
-              (phone && (p.phone || "").includes(phone))
+             // (phone && (p.phone || "").includes(phone))
+             (patient?.phone && (r.phone || "").includes(patient.phone))
             )
           : arr;
         setPrescriptions(matched.length > 0 ? matched : arr);
@@ -866,8 +867,8 @@ function PatientPrescriptions({ patient }) {
 function PatientBilling({ patient }) {
   const [bills,   setBills]   = useState([]);
   const [loading, setLoading] = useState(true);
-  const name  = patient?.firstname ? `${patient.firstname} ${patient.lastname || ""}`.trim() : "";
-  const phone = patient?.phone || "";
+ // const name  = patient?.firstname ? `${patient.firstname} ${patient.lastname || ""}`.trim() : "";
+  //const phone = patient?.phone || "";
 
   useEffect(() => {
     axios.get(`${API}/pharmacy/bills`)
